@@ -1,0 +1,40 @@
+▓▓▓ PHASE 4 — TEST & SCHEMA GUARD (PSEUDO-CODE PLAN) ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This phase adds automated validation for debug entry structure and unit tests for the
+debug framework to ensure reliability and enforce contract compliance.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ COMPONENT: DEBUG ENTRY VALIDATOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+- Enforce runtime correctness of debug logs
+- Prevent malformed or partial log entries
+
+Structure:
+- Internal to Debugger
+- Validates:
+  → timestamp is ISO string
+  → context is present
+  → action is present and matches format if enforced
+  → at least one of state or data is present
+  → ai_tags (if required) match vocabulary (future)
+
+Tags:
+- [GUARD], [CONTRACT], [TEST]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ TEST COVERAGE TARGETS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Unit test: debug accepts valid logs
+- Unit test: debug rejects malformed logs
+- Test: decorator auto-injects logs and trace_ids
+- Test: trace_id flows through multi-stage call
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Uses real or mock filesystem
+- Must operate without console output in test mode
+- May include schema linter in future CI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

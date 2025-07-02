@@ -1,140 +1,51 @@
-▓▓▓ DETAILED IMPLEMENTATION PLAN — PHASE 3: TRACE HISTORY BUFFER ▓▓▓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-This phase adds localized replay support by maintaining a bounded in-memory buffer
-of recent debug events. When an error occurs, the buffer is queried for all log entries
-matching the current `trace_id`, and the matching history is embedded into the error log.
+▓▓▓ PHASE 3 — AUTO TRACE DECORATOR (PSEUDO-CODE PLAN) ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This phase introduces the `@debug_trace` decorator to automatically instrument function
+calls with debug logs, including entry/exit, args, return values, and exceptions.
 
-The result is a full self-contained runtime incident report, with no need for external grep.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ GOALS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✓ Store last N debug entries in memory  
-✓ Key entries by `trace_id`  
-✓ On error, extract all related history for inclusion  
-✓ Support clean memory boundaries  
-✓ Preserve Phase 1 + 2 behaviors unchanged  
-✓ Enforce maximum buffer size per trace
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ FILE STRUCTURE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-/debug_core/
-├── trace_buffer.py          # [AI] — In-memory trace grouping FIFO (new)
-├── debug.py                 # Updated to push entries into buffer + flush on error
-
-/debug_logs/
-├── <context>.jsonl          # Error logs now contain embedded "trace_history" list
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ MODULE: TRACE BUFFER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ MODULE: TRACE DECORATORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Purpose:
-- Act as a global FIFO per-trace buffer
-- Retain the last N debug entries (configurable) per trace_id
+- Eliminate boilerplate debug calls in logic functions
+- Automatically capture entry, exit, errors, and trace linkage
 
-Key structures:
-- Internal dictionary: { trace_id → deque(maxlen=N) }
+Structure:
+- Decorator: @debug_trace(context="...")
+  → Logs "function_entry" with args
+  → Logs "function_exit" with return value
+  → On exception, logs "error_occurred" with traceback
 
-Operations:
-- add_entry(trace_id, entry)
-  → Stores entry in the corresponding FIFO buffer
-- get_history(trace_id)
-  → Returns list of recent events for that trace
-- clear_trace(trace_id)
-  → Optional: clear buffer on flush or timeout
+Fields:
+- context (required): for Debugger
+- trace_id (optional): threads through kwargs
 
-Constraints:
-- Each trace has independent buffer (default maxlen: 20)
-- Discards oldest entries automatically
-- Pure in-memory, no disk persistence
+Tags:
+- [UTILITY], [WRAPPER], [AI], [DIAGNOSTIC]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ INTEGRATION: DEBUGGER MODIFICATIONS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Entry log:
+  → action: "function_entry"
+  → state: {"args": ..., "kwargs": ...}
+- Exit log:
+  → action: "function_exit"
+  → state: {"return": ...}
+- Error log:
+  → action: "error_occurred"
+  → data: {"exception": str(e)}, "traceback": formatted_tb
 
-Modifications to Debugger.__call__:
-- After log entry is validated and before file write:
-  → Push entry into trace_buffer under given trace_id
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ EXAMPLE (PSEUDO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@debug_trace(context="combat/resolve")
+def resolve_attack(actor, target, trace_id=None):
+    # Normal logic
+    return result
 
-On error log (if action starts with "error_" or "exception_"):
-- Fetch matching trace_id history
-- Embed into final log as: "trace_history": [ list of prior entries ]
+→ On call, logs entry with args
+→ On success, logs return value
+→ On failure, logs error with traceback and trace_id
 
-Additional:
-- Must not overwrite existing "trace_history" if already passed manually
-- If trace_id is missing, history is not captured (warn, do not crash)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ DATA OUTPUT EXAMPLE (EMBEDDED HISTORY)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{
-  "context": "combat/resolve",
-  "action": "error_invalid_weapon",
-  "trace_id": "c92a-f30d...",
-  "data": {
-    "exception": "...",
-    "traceback": {...}
-  },
-  "trace_history": [
-    {"action": "select_target", "context": "...", "trace_id": "..."},
-    {"action": "roll_attack", "context": "...", "trace_id": "..."},
-    ...
-  ],
-  "ai_tags": ["error", "combat"]
-}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ ERROR-ONLY FLUSH POLICY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-This phase uses a conservative flush strategy:
-- Trace history is ONLY emitted on "error_*" or "exception_*" actions
-- Normal logs are written as before (no change)
-- Buffer is not persisted to disk or reused across sessions
-- If multiple error logs occur in same trace, each gets the same recent history
-
-Future extension: `debug.flush_history(trace_id)` for manual snapshotting
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ PSEUDO-FLOW: TRACE HISTORY INJECTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-1. flow begins
-2. trace_id = new_trace_id()
-3. each debug() call passes trace_id
-4. debugger records:
-     → write entry to file
-     → push entry into trace_buffer
-
-5. error occurs
-6. debug("error_invalid_weapon", ..., trace_id)
-7. debugger:
-     → loads 20 most recent logs for that trace
-     → embeds under "trace_history"
-     → writes enriched log to file
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ LOCK-IN RULES AFTER PHASE 3
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] All error-class logs include trace_history if trace_id is present  
-[ ] Ring buffer evicts oldest entries per trace automatically  
-[ ] trace_buffer never affects Phase 1–2 behavior  
-[ ] trace_id required for history to function  
-[ ] Trace buffers cleared per trace when no longer needed (optional GC)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ TIME ESTIMATE: 2–3 HOURS (DEV TIME)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- 1 hr: implement buffer + interfaces  
-- 1 hr: integrate write + flush logic in debugger  
-- 1 hr: test simulated flow and exception triggers
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■ END OF PHASE 3 PLAN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

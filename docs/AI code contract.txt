@@ -1,0 +1,80 @@
+▓▓▓ PHASE 5 — ASSISTANT CODE CONTRACT (PSEUDO-CODE PLAN) ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This phase enforces structural logging and tagging standards across all assistant-generated code.
+It ensures AI output consistently aligns with the debug architecture, avoids regressions, and
+follows behavioral boundaries defined in the Modular ASCII Game Architecture.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ CONTRACT RULESET (ASSISTANT BEHAVIOR)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+- Prevent raw output, schema violations, or unsanctioned print statements
+- Require all AI-generated logic to integrate with debug and tagging systems
+
+Rules:
+1. No use of `print()` or `console.log()` or equivalent in logic modules
+2. All runtime output must be routed via the `debug()` logger
+3. `debug()` must include:
+   - `context`: string in module/section format
+   - `action`: string in `verb_noun` format
+   - Either `state` or `data`: at least one
+   - Optional: `trace_id`
+   - Optional: `ai_tags` (required if tagging is active)
+4. All new functions must:
+   - Include docstring with `@tags` block (even if placeholder)
+   - Declare the debug context or use decorator
+5. All errors must log as:
+   → action: "error_occurred"
+   → data: {"exception": str(e)}
+   → state: {"traceback": formatted_traceback}
+   → trace_id: required if available
+
+Tags:
+- [CONTRACT], [ASSISTANT], [GUARD]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ CONTRACT ENFORCEMENT STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Assistant behavior settings updated to:
+  → Reject code that uses `print()` or omits debug routing
+  → Default to structured logging
+  → Warn on missing tagging or context
+
+- All assistant output must follow these constraints unless explicitly overridden
+
+- Assistant will self-audit responses and insert `[CONTRACT VIOLATION]` if breach occurs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ OPTIONAL (FUTURE): STATIC CONTRACT CHECKER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Script to scan codebase for:
+  → use of print()
+  → missing debug() on error flows
+  → functions without @tags
+  → raw error strings not routed through debug
+
+- May run as part of test suite or CI process
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ EXAMPLE FUNCTION BLOCK (CONTRACT-COMPLIANT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+def resolve_hit(...):
+    """
+    Resolve weapon impact on target.
+
+    @tags:
+      domain: combat
+      behavior: resolution
+      urgency: high
+    """
+    debug("resolve_hit", state={...}, context="combat/resolve", trace_id=trace_id)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ LOCK-IN CONSEQUENCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Once this phase is active:
+- All assistant-generated code must follow contract rules
+- Violations are flagged immediately
+- Contract is permanently enforced unless overridden by project directive
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

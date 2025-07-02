@@ -35,7 +35,7 @@ class Debugger:
 
         os.makedirs("debug_logs", exist_ok=True)
 
-    def __call__(self, action, data=None, state=None, ai_tags=None, print_console=False):
+    def __call__(self, action, data=None, state=None, ai_tags=None, trace_id=None, print_console=False):
         """Submits a debug entry for logging and optional console output.
 
         Required:
@@ -45,7 +45,8 @@ class Debugger:
         - data: any structured object
         - state: any structured object
         - ai_tags: list of strings
-        - print_console: bool (True to print formatted summary to stdout)
+        - trace_id: UUID string to correlate logs across flow
+        - print_console: bool
         """
         if not DEBUG_MODE:
             return None
@@ -62,6 +63,8 @@ class Debugger:
             entry["state"] = state
         if ai_tags is not None:
             entry["ai_tags"] = ai_tags
+        if trace_id is not None:
+            entry["trace_id"] = trace_id
 
         self._validate_entry(entry)
 
@@ -69,7 +72,7 @@ class Debugger:
             f.write(json.dumps(entry) + "\n")
 
         if print_console:
-            print(f"[{self.context}] {action} | tags: {ai_tags}")
+            print(f"[{self.context}] {action} | tags: {ai_tags} | trace_id: {trace_id}")
 
         return entry
 

@@ -1,0 +1,88 @@
+▓▓▓ HANDOFF BRIEFING — PHASE A: TAG DICTIONARY + AI TAG ENFORCEMENT ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT: Pareto Debugging Framework
+PHASE: A — Tag Alignment and AI Tagging Enforcement
+GOAL: Define, validate, and enforce structured ai\_tags using a shared tag vocabulary
+STYLE: Schema-first, rule-validated, MECE-compliant
+REQUIREMENTS: Must comply with `tag_dictionary.txt`, and all assistant-generated logs must use valid tags
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧱 OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Implement shared tagging vocabulary enforcement for:
+
+* Runtime log entries (ai\_tags field)
+* Source code annotations (@tags blocks)
+* Future tag-aware log clustering and triage
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```
+debug_core/
+├── tag_rules.py             # tag validation logic
+├── tags_vocab.json          # official MECE tag dictionary
+└── tag_autocomplete.py      # optional CLI dev tool
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `tag_rules.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+
+* Validate ai\_tags in each debug log against `tags_vocab.json`
+* Optionally expose developer utilities to list all valid tags
+
+Key Function:
+
+```python
+def validate_ai_tags(tags: list[str]) -> None:
+    Raises ValueError on unrecognized or misgrouped tags
+```
+
+Behavior:
+
+* Each tag must match at least one group in the tag dictionary
+* Tag usage must follow MECE principles (1 per group)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `tag_autocomplete.py` (Optional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+* Command-line script to suggest tags for given contexts or modules
+* May be invoked as `python tag_autocomplete.py combat`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 CONFIG: `tags_vocab.json`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Must use the MECE format from `tag_dictionary.txt`
+
+Example structure:
+
+```json
+{
+  "domain": ["combat", "movement", "inventory"],
+  "data_affinity": ["actor_data", "item_data"],
+  "scope_horizon": ["prototype", "mvp"],
+  "semantic_role": ["runtime_behavior", "data_schema"]
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ENFORCEMENT CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+* All debug log entries must include an ai\_tags list
+* Every tag must appear in the official vocabulary
+* At least 1 tag per semantic group must be present unless explicitly exempted
+* All assistant-generated files must also use `@tags:` blocks in docstrings
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPLETION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\[ ] tags\_vocab.json created and aligned with MECE groups
+\[ ] validate\_ai\_tags() integrated into Debugger `_validate()`
+\[ ] Any tag mismatch raises a clear ValueError
+\[ ] Optional autocomplete or suggestion tool wired for devs
+\[ ] Logging rules in `debug_rules.json` updated to `require_ai_tags = true`

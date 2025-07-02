@@ -1,0 +1,77 @@
+▓▓▓ HANDOFF BRIEFING — PHASE B: TRACE HISTORY BUFFER ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT: Pareto Debugging Framework
+PHASE: B — Trace History Bundling on Error Logs
+GOAL: Retain and emit recent log entries per trace\_id to allow causal reconstruction by AI
+STYLE: Runtime buffer, UUID-keyed, FIFO bundling
+REQUIREMENTS: Compatible with existing debug() flow, does not break current logging format
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧱 OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Implement an in-memory ring buffer that holds recent debug events for each trace\_id.
+
+* On `action="error_occurred"`, inject a `trace_history` field into the log entry
+* This must work transparently with existing Debugger and not require external files
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```
+debug_core/
+├── trace_buffer.py          # FIFO buffer per trace_id
+└── trace_utils.py           # bundling helpers for error injection
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `trace_buffer.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+
+* Maintain a per-trace\_id memory of recent debug entries (default: 20)
+* FIFO queue that appends on each call to `debug()`
+
+Key Class:
+
+```python
+class TraceBuffer:
+    def add(trace_id: str, entry: dict): ...
+    def get(trace_id: str) -> list[dict]: ...
+```
+
+Design Notes:
+
+* Uses `collections.deque` or similar
+* Must auto-cleanup old trace\_ids after inactivity or count limit
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `trace_utils.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Function:
+
+```python
+def attach_trace_history(entry: dict, trace_id: str):
+    entry["trace_history"] = trace_buffer.get(trace_id)
+```
+
+Usage:
+
+* Only used inside Debugger when `action == "error_occurred"`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 DEBUGGER INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Modify `Debugger.__call__()` to:
+
+1. Always `trace_buffer.add(trace_id, entry)` if trace\_id is present
+2. If `action == "error_occurred"`, inject `trace_history` via `attach_trace_history()`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ COMPLETION CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\[ ] trace\_buffer maintains rolling log per trace\_id
+\[ ] `trace_history` appears in all error logs with trace\_id
+\[ ] Behavior is invisible for non-error logs
+\[ ] Maximum buffer size is enforced via config or constant
+\[ ] All assistant-generated error logs follow this convention

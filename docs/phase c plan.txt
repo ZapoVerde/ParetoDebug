@@ -1,0 +1,81 @@
+▓▓▓ HANDOFF BRIEFING — PHASE C: ASSISTANT CONTRACT ENFORCEMENT ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT: Pareto Debugging Framework
+PHASE: C — Assistant Code Contract Enforcement
+GOAL: Statistically enforce compliance of assistant-generated code with project debug, tagging, and structure rules
+STYLE: Static analysis + runtime check integration
+REQUIREMENTS: Match behavior profile, docstring, tag, and adapter policies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧱 OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Create a static enforcement layer that:
+
+* Rejects assistant-generated code with `print()` or untagged debug
+* Flags missing @tags blocks
+* Validates all ai\_tags against official vocab
+* Checks docstring + file header compliance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+```
+assistant_contract/
+├── contract_checker.py         # main linter/checker logic
+├── contract_rules.json         # codified enforcement policies
+└── assistant_flags.log         # output of any violations
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `contract_checker.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Functions:
+
+```python
+def check_file(filepath: str) -> list[str]:
+    # returns list of violation messages
+
+def check_directory(path: str) -> dict[str, list[str]]:
+    # batch check; returns {file: [violations]}
+```
+
+Checks:
+
+* No `print()` in logic
+* All `debug()` calls must include required fields
+* All functions must have @tags and docstring summary
+* All ai\_tags must match `tags_vocab.json`
+* File must start with correct file header comment
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 CONFIG: `contract_rules.json`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Example:
+
+```json
+{
+  "require_docstring": true,
+  "require_tags": true,
+  "require_ai_tags": true,
+  "disallow_print": true,
+  "enforce_file_headers": true
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 OUTPUT: `assistant_flags.log`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+* Plain text output
+* Format: `FILENAME: <violation>`
+* Used during test/lint or export steps
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ COMPLETION CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\[ ] All assistant code paths validated
+\[ ] Files with violations are listed clearly
+\[ ] Contract checker can be run manually or via CI
+\[ ] All debug and tag rules from profile are enforced
+\[ ] All `@tags` and ai\_tags match tag dictionary

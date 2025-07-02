@@ -1,0 +1,7 @@
+{
+  "enforce_action_format": true,
+  "require_ai_tags": true,
+  "require_state_or_data": true,
+  "output_format": "jsonl",
+  "file_naming_policy": "context_sanitized.jsonl"
+}

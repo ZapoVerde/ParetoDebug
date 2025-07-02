@@ -1,0 +1,131 @@
+▓▓▓ HANDOFF BRIEFING — PHASE 1 IMPLEMENTATION ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT: Pareto Debugging Framework
+PHASE: 1 — Core Logger + Rule Enforcer
+GOAL: Implement a lightweight, structured, AI-optimized logging system for solo game dev
+STYLE: Contract-first, file-routed, JSONL format logs, schema-validated
+REQUIREMENTS: Compatible with Modular ASCII Game Architecture, adapter-safe, fully testable
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧱 OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Implement a minimal debug logging core that:
+
+* Accepts structured log entries via a `Debugger` class
+* Writes validated JSON lines to a per-context file
+* Can be safely invoked via adapter interface
+* Enforces rule schema from config
+* Optionally prints to console in dev mode
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The Phase 1 structure must follow this exact layout:
+
+```
+debug_adapter.py                  # External interface for systems
+debug_core/
+├── debug_rules.json             # Config file for rule enforcement
+├── debug_rules.py               # Python module to load rules
+└── debugger.py                  # Core logging engine
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `debug_adapter.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+
+* Adapter-layer entry point
+* Returns a `Debugger` instance for a given `context`
+
+Signature:
+
+```python
+def get_debugger(context: str) -> Debugger
+```
+
+Behavior:
+
+* Sanitize or wrap input
+* Prevent direct import of `debug_core` into game systems
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `debug_core/debugger.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+
+* Construct log entries
+* Validate according to rules
+* Write to a `.jsonl` file in `debug_logs/`
+
+Class: `Debugger`
+
+Responsibilities:
+
+* Accepts: `action`, optional `data`, `state`, `ai_tags`, `trace_id`
+* Always logs: `timestamp`, `context`, `action`
+* Validates required fields via loaded rules
+* Writes single-line JSON to `/debug_logs/<context>.jsonl`
+* Optionally prints to console in dev mode
+
+Methods:
+
+* `__init__(context: str)`
+* `__call__(action, data=None, state=None, ai_tags=None, trace_id=None)`
+* `_validate(entry_dict)`
+* `_sanitize_context()`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 MODULE: `debug_core/debug_rules.py`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+
+* Load and provide debug rule schema from JSON config
+
+Function:
+
+```python
+def load_debug_rules() -> dict
+```
+
+Fallback:
+
+* If config missing, return permissive defaults
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 CONFIG: `debug_core/debug_rules.json`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Example:
+
+```json
+{
+  "enforce_action_format": true,
+  "require_ai_tags": false,
+  "require_timestamp": true,
+  "require_context": true,
+  "require_state_or_data": true,
+  "file_naming_policy": "context_sanitized.jsonl",
+  "output_format": "jsonl"
+}
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 OUTPUT REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Each log entry must be:
+
+* Serialized to JSON object
+* Appended as a single line
+* Stored in `debug_logs/<sanitized_context>.jsonl`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ COMPLETION CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+* Calling `debug("action")` from any module routes correctly
+* Logs appear in named files with valid schema
+* Console output is optional but available
+* Schema violations are caught and raise errors
+* No `print()` remains in any logic file
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

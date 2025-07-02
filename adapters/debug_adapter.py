@@ -30,3 +30,4 @@ def debug(action, data=None, state=None, ai_tags=None, print_console=False):
         ai_tags=ai_tags,
         print_console=print_console
     )
+

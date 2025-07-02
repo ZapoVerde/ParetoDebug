@@ -1,0 +1,86 @@
+📘 TAG DICTIONARY — SEMANTIC GROUP SYSTEM (Plaintext)
+
+This document defines the tag dictionary format and current semantic groups.
+Each tag belongs to a semantic group that describes a dimension of meaning.
+Symbols and design documents should carry at least one tag from each group.
+
+This dictionary is a LIVING DOCUMENT. Tags may evolve as the project grows.
+
+----------------------------------------
+FORMAT RULES (MECE PRINCIPLES)
+----------------------------------------
+
+- Mutually Exclusive: Tags within a group should not overlap in meaning.
+- Collectively Exhaustive: Together, the tag groups should fully describe any element.
+- One tag per group minimum (unless truly N/A).
+- Avoid synonyms or redundant specificity.
+
+----------------------------------------
+GROUP: domain
+> What is this about?
+
+- combat        → Weapons, damage, initiative
+- movement      → Travel, zones, adjacency, tactical position
+- perception    → Visibility, RoP, stealth, fog-of-war
+- inventory     → Items, carry weight, storage, containers
+- quests        → Objective flows, triggers, stage events
+- faction       → Actors, politics, relationships, diplomacy
+- UI            → Rendering, display memory, overlays
+- mutation      → Technique upgrades, evolution, skill tree branches
+- narrative     → Worldbuilding, tone, scripted events
+
+----------------------------------------
+GROUP: data_affinity
+> What structured data does it interact with?
+
+- skill_data       → XP, advancement, unlocks
+- actor_data       → Player and NPC stats
+- faction_data     → Diplomacy, kingdom relations
+- quest_data       → Objective chains, flags
+- technique_data   → Combat moves and execution
+- mutation_data    → Procedural upgrades, effects, probabilities
+- item_data        → Weapons, armor, weight, stats
+- map_data         → Zones, floorplans, terrain
+
+----------------------------------------
+GROUP: scope_horizon
+> How far is this expected to persist in the project?
+
+- prototype    → Throwaway, early scaffolding
+- mvp          → Minimal viable, replaceable
+- interim      → Good enough for current scale
+- final        → Expected long-term structure
+- shim         → Temporary glue bridging systems
+
+----------------------------------------
+GROUP: semantic_role
+> What role does this concept or file play in the system?
+
+- procedural_model  → Generation or randomized logic
+- system_definition → Defines structural rules or models
+- data_schema       → Data layout or field definitions
+- render_contract   → Output structure, interface boundary
+- trigger_logic     → Conditionals, event flow
+- runtime_behavior  → Execution-phase systems (ticks, pulses, etc.)
+
+----------------------------------------
+EXAMPLE TAG BLOCK
+(Used at top of file or inside a docstring)
+
+@tags:
+  domain: mutation
+  data_affinity: skill_data, mutation_data
+  scope_horizon: final
+  semantic_role: procedural_model
+
+----------------------------------------
+
+Future groups may include:
+- reliability_level
+- AI_assist_mode
+- debug_visibility
+- test_coverage_status
+
+But the above four (domain, data_affinity, scope_horizon, semantic_role) are the recommended foundation for all assets.
+
+----------------------------------------

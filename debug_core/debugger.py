@@ -20,7 +20,7 @@ except ImportError:
 
 class Debugger:
     """Structured logger that enforces debug rules and writes to .jsonl.
-    
+
     Each instance is scoped to a specific context (e.g., "combat/resolve").
     It builds, validates, and optionally prints each debug entry.
     """
@@ -77,23 +77,40 @@ class Debugger:
         return entry
 
     def _validate_entry(self, entry: dict):
-        """Enforces required fields and rule structure."""
+        """Enforces required fields and rule structure for debug entries."""
         required = ["timestamp", "context", "action"]
         for field in required:
             if field not in entry:
                 raise ValueError(f"[DEBUG] Missing required field: {field}")
 
+        # Validate ISO8601 timestamp
+        try:
+            datetime.datetime.fromisoformat(entry["timestamp"])
+        except ValueError:
+            raise ValueError(f"[DEBUG] Invalid timestamp format: {entry['timestamp']}")
+
+        # Action format check
         if self.rules.get("enforce_action_format", False):
             if not isinstance(entry["action"], str) or "_" not in entry["action"]:
-                raise ValueError(f"[DEBUG] Action format must be verb_noun: got '{entry['action']}'")
+                raise ValueError(f"[DEBUG] Action must be in 'verb_noun' format: got '{entry['action']}'")
 
+        # ai_tags validation
         if self.rules.get("require_ai_tags", False):
-            if "ai_tags" not in entry or not isinstance(entry["ai_tags"], list) or not entry["ai_tags"]:
-                raise ValueError(f"[DEBUG] Missing or invalid ai_tags")
+            tags = entry.get("ai_tags")
+            if not isinstance(tags, list) or not all(isinstance(t, str) for t in tags) or not tags:
+                raise ValueError(f"[DEBUG] ai_tags must be a non-empty list of strings")
 
+        # state/data presence validation
         if self.rules.get("require_state_or_data", False):
             if "data" not in entry and "state" not in entry:
-                raise ValueError(f"[DEBUG] Must include at least 'data' or 'state'")
+                raise ValueError("[DEBUG] Must include at least one of 'data' or 'state'")
+
+        # Optional structure checks
+        if "state" in entry and not isinstance(entry["state"], dict):
+            raise ValueError("[DEBUG] 'state' must be a dictionary if present")
+
+        if "data" in entry and not isinstance(entry["data"], dict):
+            raise ValueError("[DEBUG] 'data' must be a dictionary if present")
 
     def _load_rules(self) -> dict:
         """Loads debug_rules.json if available, otherwise returns default lenient rules."""

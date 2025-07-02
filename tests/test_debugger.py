@@ -15,7 +15,6 @@ from adapters.debug_adapter import get_debugger
 
 LOG_FILE = "debug_logs/test_context.jsonl"
 
-# Skip this test module entirely if debugging is disabled
 if not DEBUG_MODE:
     pytest.skip("DEBUG_MODE is disabled — skipping debugger tests", allow_module_level=True)
 
@@ -90,7 +89,7 @@ def test_missing_state_and_data_raises(clean_log_file):
             print_console=False
         )
 
-    assert "at least 'data' or 'state'" in str(e.value)
+    assert "at least one of 'data' or 'state'" in str(e.value) or "at least 'data' or 'state'" in str(e.value)
 
 
 def test_invalid_action_format_raises(clean_log_file):
@@ -108,3 +107,57 @@ def test_invalid_action_format_raises(clean_log_file):
         )
 
     assert "verb_noun" in str(e.value)
+
+
+def test_non_dict_state_rejected(clean_log_file):
+    """Rejects debug entry if state is not a dict.
+    @status: "stable"
+    """
+    dbg = get_debugger("test/context")
+
+    with pytest.raises(ValueError) as e:
+        dbg(
+            action="invalid_state_type",
+            state="not a dict",
+            data={"ok": True},
+            ai_tags=["combat"],
+            print_console=False
+        )
+
+    assert "'state' must be a dictionary" in str(e.value)
+
+
+def test_non_dict_data_rejected(clean_log_file):
+    """Rejects debug entry if data is not a dict.
+    @status: "stable"
+    """
+    dbg = get_debugger("test/context")
+
+    with pytest.raises(ValueError) as e:
+        dbg(
+            action="invalid_data_type",
+            state={"valid": True},
+            data="BAD",
+            ai_tags=["combat"],
+            print_console=False
+        )
+
+    assert "'data' must be a dictionary" in str(e.value)
+
+
+def test_invalid_ai_tags_format(clean_log_file):
+    """Rejects debug entry if ai_tags is not a list of strings.
+    @status: "stable"
+    """
+    dbg = get_debugger("test/context")
+
+    with pytest.raises(ValueError) as e:
+        dbg(
+            action="bad_tags",
+            state={"ok": True},
+            data={"ok": True},
+            ai_tags="not_a_list",
+            print_console=False
+        )
+
+    assert "ai_tags must be a non-empty list of strings" in str(e.value)

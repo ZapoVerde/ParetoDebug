@@ -1,0 +1,330 @@
+▓▓▓ MODULAR ASCII GAME ARCHITECTURE ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+■ CORE PRINCIPLES
+─────────────────────────────────────
+
+Separation of Concerns
+
+Core: Data storage + validation  
+Systems: Gameplay logic  
+Interface: Input/Output handling  
+Assets: Externalized content
+
+Unidirectional Data Flow  
+Input → Core ← Systems → Render  
+(No systems-to-systems direct calls)
+
+Tick-Based Determinism  
+All game logic derives from integer ticks  
+No floating-point time calculations
+
+■ LAYER BREAKDOWN
+─────────────────────────────────────
+
+╔════════════╦══════════════════════════╦══════════════════╗
+║ LAYER      ║ RESPONSIBILITY           ║ UPGRADE PATH     ║
+╠════════════╬══════════════════════════╬══════════════════╣
+║ CORE       ║ Entity state             ║ Never modified   ║
+║            ║ World truth source       ║ Only extended    ║
+╠════════════╬══════════════════════════╬══════════════════╣
+║ SYSTEMS    ║ Combat/XP/AI             ║ Swap subsystems  ║
+║            ║ Temporary effects        ║ Add new systems  ║
+╠════════════╬══════════════════════════╬══════════════════╣
+║ INTERFACE  ║ Input/Rendering          ║ Replace entirely ║
+║            ║ Player feedback          ║ Keep contracts   ║
+╚════════════╩══════════════════════════╩══════════════════╝
+
+■ CRITICAL INTERFACES
+─────────────────────────────────────
+
+World API (Core → Systems)
+
+get_entities_at(x,y): List[Actor]  
+validate_move(actor, dx, dy): bool
+
+■ ACTION CONTRACT (Systems → Core)
+─────────────────────────────────────
+
+Every action must provide:
+
+validate(): bool  
+→ Checks if the action *can* be done right now  
+→ Does *not* change anything in the game  
+→ Used to stop illegal moves before they run
+
+execute() → ActionResult  
+→ Actually performs the action  
+→ Changes game state (e.g. reduces HP)  
+→ Must return a clear outcome — even if it failed
+
+duration_ticks: int  
+→ How long the action takes  
+→ Must be set when the action is created  
+→ Cannot change later
+
+ActionResult format:
+{
+  success: true or false  
+  message: short description of what happened  
+  events: list of things that occurred (optional)
+}
+
+Render Contract (Core → Interface)
+
+draw_entity(x, y, symbol)  
+draw_ui(text, position)
+
+■ DESIGN RULES TO ENFORCE
+─────────────────────────────────────
+
+Core Layer Must  
+- Validate all state changes  
+- Never initiate actions  
+- Expose only query methods
+
+Systems Layer Must  
+- Process all events in order  
+- Never store game state  
+- Communicate via Core API
+
+Interface Layer Must  
+- Translate raw input to actions  
+- Never contain game logic  
+- Treat all data as read-only
+
+■ TEST STRATEGY
+─────────────────────────────────────
+
+PHASE 1 — MVP BUILDING  
+- Test only critical paths (combat, XP, AI)  
+- Use mocks or assertions for Core↔System boundaries  
+- Do not test [DEAD-END] modules
+
+PHASE 2 — LOCK-IN  
+- Full unit tests for stable systems  
+- Add integration tests for Core↔Systems  
+- Validate savefile schema
+
+PHASE 3 — FINAL POLISH  
+- 100% coverage for [PERMANENT] modules  
+- Regression and fuzz tests for save/load  
+- Full tick log validation for replay
+
+All tests must live in /tests/
+
+■ ASSET MANAGEMENT
+─────────────────────────────────────
+/actors/  
+hero.txt       # @ symbol + color codes  
+enemy.txt      # E + HP variants
+
+/techniques/  
+slash.json     # {damage:2, area:3x3}  
+fireball.json  # {range:5, damage:4}
+
+■ ADAPTER ARCHITECTURE
+─────────────────────────────────────
+
+Adapters act as stable, swappable boundaries between layers.
+
+No system should directly depend on the internal logic of another.  
+All communication between Core, Systems, Interface, and any [DEAD-END]  
+modules must be routed through adapter layers.
+
+Benefits:  
+- DEAD-END modules can be removed cleanly  
+- AI-generated code targets stable entry points  
+- Debugging, replay, and multiplayer become viable
+
+REQUIRES ADAPTER LAYER
+
+Adapters live in:
+
+/adapters/  
+├── core_adapter.py  
+├── input_adapter.py  
+├── render_adapter.py  
+└── etc.
+
+Adapters must:  
+- Provide stable function or class interfaces  
+- Contain no logic — only redirect  
+- Be the *only* way to access [DEAD-END] or cross-layer code
+
+TAGGING REQUIREMENT
+
+All adapter files must include:  
+# [ADAPTER]  
+# Role: Mediates access to [DEAD-END] or cross-layer systems
+
+■ DEBUGGING AIDS
+─────────────────────────────────────
+
+Frame Inspection  
+Tick number overlay  
+Entity action logs
+
+Validation Flags  
+Invalid move attempts  
+XP overflow checks
+
+ASCII Visualizers  
+┌───────┐  
+│@ 12HP │   # Player status  
+│E1 E2 │   # Enemy positions  
+└───────┘
+
+■ ASSISTANT IMPLEMENTATION CONTRACT
+─────────────────────────────────────
+
+The assistant is the primary coder. The human integrator defines structure,  
+locks modules, and approves designs. The assistant must operate within  
+strict boundaries to protect architectural integrity.
+
+ALLOWED
+
+✅ SYSTEMS/, INTERFACE/, ADAPTERS/, TESTS/, ASSETS/  
+✅ Generate test scaffolding  
+✅ Refactor [DEAD-END] modules behind adapters  
+✅ Follow contract-first rules only
+
+RESTRICTED
+
+❌ No changes to [PERMANENT] modules unless instructed  
+❌ No direct access to [DEAD-END] code  
+❌ No platform-specific logic  
+❌ No hardcoded constants or undeclared fields
+
+TAGGING REQUIRED
+
+All assistant-generated files must include:  
+# [AI]  
+# Generated by assistant under integrator review  
+# Must follow locked contracts and tagging rules
+
+BEHAVIORAL PROFILE  
+→ See `docs/chat_behavior_profile.md` for AI governance expectations
+
+■ SAVEFILE FORMAT & POLICY
+─────────────────────────────────────
+
+All savefiles must be:
+
+- Plain JSON  
+- Extension: .save.json  
+- Fully serializable  
+- Tagged with version and tick metadata
+
+Each file must include:  
+{
+  "version": "1.0.alpha",  
+  "core_hash": "abc123",  
+  "tick": 600,  
+  "data": { ... }
+}
+
+Savefile validation:  
+- Must run before load  
+- Must fail loudly if structure is invalid  
+- Must report: filename, tick, and reason
+
+Partial saves (e.g. zone or actor scoped) may be added later
+
+■ UPGRADE SAFEGUARDS
+─────────────────────────────────────
+
+For Sprite Rendering  
+- Keep ASCII coordinate system  
+- Map symbols to texture IDs
+
+For Realtime Play  
+- Maintain tick simulation core  
+- Add interpolation layer
+
+For Multiplayer  
+- Deterministic action queue  
+- Tick-based lockstep
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This document follows these conventions:
+
+Box-drawing chars for structure  
+Fixed-width alignment  
+No external tool requirements
+
+Key principles to revisit during development:
+
+Core never asks "why?" (Only validates "what")  
+Systems never know "how" (Rendering/input details)  
+Assets never dictate logic (Data drives behavior)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▓▓▓ UPGRADE PATH PRINCIPLE ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+■ CORE RULE  
+Every module must fall into one of two categories:
+
+Upgrade-Ready: Designed to evolve into final product  
+Dead-End: Clearly marked, isolated behind adapters
+
+■ CATEGORY TAGS
+─────────────────────────────────────
+[PERMANENT]  # Core systems (never replaced)  
+[UPGRADABLE] # Reimplemented later  
+[DEAD-END]   # Temporary solutions
+
+■ DEAD-END MODULE RULES
+─────────────────────────────────────
+
+Must implement a stable interface  
+Cannot be imported directly  
+Requires access via ADAPTER
+
+■ SAMPLE MODULE MAP
+─────────────────────────────────────
+CORE/  
+├── entity.py        [PERMANENT]  
+├── world_state.py   [PERMANENT]  
+└── tick_clock.py    [PERMANENT]
+
+SYSTEMS/  
+├── combat.py        [UPGRADABLE]  
+└── simple_ai.py     [DEAD-END]  # Future: behavior_tree.py
+
+INTERFACE/  
+├── render_ascii.py  [DEAD-END]  # Future: render_sprite.py  
+└── input_term.py    [DEAD-END]  # Future: input_unity.py
+
+■ WARNING SIGNS
+─────────────────────────────────────
+! Contains platform-specific code  
+! Hardcodes non-core game rules  
+! Lacks interface abstraction
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ FINAL DESIGN PRINCIPLES
+─────────────────────────────────────
+
+PRINCIPLE 1: CONTRACT-FIRST DESIGN  
+PRINCIPLE 2: DATA > CODE  
+PRINCIPLE 3: TEST SEAMS  
+PRINCIPLE 4: NO MAGIC NUMBERS  
+PRINCIPLE 5: DEPENDENCY INJECTION  
+PRINCIPLE 6: FAIL LOUDLY  
+PRINCIPLE 7: VERSIONED SAVES  
+PRINCIPLE 8: DOCUMENT ASSUMPTIONS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENFORCEMENT CHECKLIST
+[ ] Contracts defined before coding  
+[ ] All game data externalized  
+[ ] Observable event streams  
+[ ] Zero magic numbers  
+[ ] No internal dependency creation  
+[ ] Fail-fast with diagnostics  
+[ ] Savefile versioning  
+[ ] Assumptions documented  
+[ ] Adapter layer for all cross-boundary access  
+[ ] Assistant-generated code tagged and reviewed  

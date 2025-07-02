@@ -1,0 +1,38 @@
+{
+  "domain": [
+    "combat",
+    "movement",
+    "perception",
+    "inventory",
+    "quests",
+    "faction",
+    "UI",
+    "mutation",
+    "narrative"
+  ],
+  "data_affinity": [
+    "skill_data",
+    "actor_data",
+    "faction_data",
+    "quest_data",
+    "technique_data",
+    "mutation_data",
+    "item_data",
+    "map_data"
+  ],
+  "scope_horizon": [
+    "prototype",
+    "mvp",
+    "interim",
+    "final",
+    "shim"
+  ],
+  "semantic_role": [
+    "procedural_model",
+    "system_definition",
+    "data_schema",
+    "render_contract",
+    "trigger_logic",
+    "runtime_behavior"
+  ]
+}

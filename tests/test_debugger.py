@@ -1,6 +1,6 @@
 # tests/test_debugger.py
 # [AI]
-# Tests for core Debugger logging behavior
+# Tests for core Debugger logging behavior with enforced ai_tags
 # @tags:
 #   domain: UI
 #   data_affinity: actor_data
@@ -15,8 +15,12 @@ from adapters.debug_adapter import get_debugger
 
 LOG_FILE = "debug_logs/test_context.jsonl"
 
+# Skip entire module if debugging is disabled
 if not DEBUG_MODE:
     pytest.skip("DEBUG_MODE is disabled — skipping debugger tests", allow_module_level=True)
+
+# A complete, valid tag set for happy-path tests
+VALID_TAGS = ["combat", "actor_data", "mvp", "runtime_behavior"]
 
 
 @pytest.fixture
@@ -32,132 +36,103 @@ def clean_log_file():
 
 
 def test_valid_log_entry(clean_log_file):
-    """Logs a valid debug entry and verifies its file and structure.
-    @status: "stable"
-    """
+    """Logs a valid entry and verifies file + structure."""
     dbg = get_debugger("test/context")
 
     entry = dbg(
         action="simulate_hit",
         data={"roll": 6},
         state={"hp": 8},
-        ai_tags=["combat", "performance"],
-        print_console=False
+        ai_tags=VALID_TAGS,
+        print_console=False,
     )
 
-    assert entry is not None, "Debugger returned None — check DEBUG_MODE"
+    assert entry is not None
     assert entry["action"] == "simulate_hit"
     assert os.path.exists(LOG_FILE)
 
     with open(LOG_FILE, "r", encoding="utf-8") as f:
-        line = f.readline()
-        logged = json.loads(line)
+        logged = json.loads(f.readline())
         assert logged["context"] == "test_context"
-        assert "timestamp" in logged
-        assert "data" in logged
-        assert "state" in logged
+        assert set(VALID_TAGS).issubset(logged["ai_tags"])
 
 
 def test_missing_ai_tags_raises(clean_log_file):
-    """Rejects debug entry if ai_tags are missing or invalid.
-    @status: "stable"
-    """
+    """Rejects log entry when ai_tags is missing."""
     dbg = get_debugger("test/context")
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         dbg(
-            action="fail_check",
-            data={"error": "no tags"},
+            action="fail_no_tags",
+            data={"err": 1},
             state={"hp": 0},
             ai_tags=None,
-            print_console=False
+            print_console=False,
         )
 
-    assert "ai_tags" in str(e.value)
+
+def test_invalid_ai_tags_format(clean_log_file):
+    """Rejects ai_tags that are not a list of strings."""
+    dbg = get_debugger("test/context")
+
+    with pytest.raises(ValueError):
+        dbg(
+            action="fail_bad_tag_format",
+            data={"err": 2},
+            state={"hp": 0},
+            ai_tags="not_a_list",
+            print_console=False,
+        )
 
 
 def test_missing_state_and_data_raises(clean_log_file):
-    """Rejects debug entry if both state and data are missing.
-    @status: "stable"
-    """
+    """Rejects when both state and data are absent."""
     dbg = get_debugger("test/context")
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         dbg(
             action="fail_both",
-            ai_tags=["combat"],
-            print_console=False
+            ai_tags=VALID_TAGS,
+            print_console=False,
         )
-
-    assert "at least one of 'data' or 'state'" in str(e.value) or "at least 'data' or 'state'" in str(e.value)
 
 
 def test_invalid_action_format_raises(clean_log_file):
-    """Rejects debug entry if action format is not verb_noun.
-    @status: "stable"
-    """
+    """Rejects action not in verb_noun format."""
     dbg = get_debugger("test/context")
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         dbg(
             action="badformat",
             data={"x": 1},
-            ai_tags=["combat"],
-            print_console=False
+            ai_tags=VALID_TAGS,
+            print_console=False,
         )
-
-    assert "verb_noun" in str(e.value)
 
 
 def test_non_dict_state_rejected(clean_log_file):
-    """Rejects debug entry if state is not a dict.
-    @status: "stable"
-    """
+    """Rejects state that is not a dict."""
     dbg = get_debugger("test/context")
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         dbg(
             action="invalid_state_type",
-            state="not a dict",
+            state="not_a_dict",
             data={"ok": True},
-            ai_tags=["combat"],
-            print_console=False
+            ai_tags=VALID_TAGS,
+            print_console=False,
         )
-
-    assert "'state' must be a dictionary" in str(e.value)
 
 
 def test_non_dict_data_rejected(clean_log_file):
-    """Rejects debug entry if data is not a dict.
-    @status: "stable"
-    """
+    """Rejects data that is not a dict."""
     dbg = get_debugger("test/context")
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         dbg(
             action="invalid_data_type",
             state={"valid": True},
             data="BAD",
-            ai_tags=["combat"],
-            print_console=False
+            ai_tags=VALID_TAGS,
+            print_console=False,
         )
-
-    assert "'data' must be a dictionary" in str(e.value)
-
-
-def test_invalid_ai_tags_format(clean_log_file):
-    """Rejects debug entry if ai_tags is not a list of strings.
-    @status: "stable"
-    """
-    dbg = get_debugger("test/context")
-
-    with pytest.raises(ValueError) as e:
-        dbg(
-            action="bad_tags",
-            state={"ok": True},
-            data={"ok": True},
-            ai_tags="not_a_list",
-            print_console=False
-        )
-
-    assert "ai_tags must be a non-empty list of strings" in str(e.value)

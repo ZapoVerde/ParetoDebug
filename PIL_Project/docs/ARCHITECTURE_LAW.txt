@@ -1,0 +1,51 @@
+=== CORE PRINCIPLES ===
+
+TRACEABILITY > ENCAPSULATION
+
+Every critical action must be reconstructible from logs + naming
+
+DEBUGGING-FIRST DESIGN
+
+Systems are designed for observability, not just functionality
+
+=== IMMUTABLE RULES ===
+[A1] All I/O lives in loaders/
+| Rationale: Isolates side effects for replay
+[A2] MFVs only called at top-level
+| Rationale: Prevents untraceable action-at-a-distance
+[A3] No logic in unexported local functions
+| Rationale: Ensures all behaviors are auditable
+
+=== ENFORCEMENT ===
+
+Violations block vault exports
+
+AI must reject PRs with violations
+
+=== ANTI-EXAMPLES ===  
+# Violations vs. Compliant Alternatives  
+[IO-1] ❌ utils/file_reader.py:  
+       def read_config():  
+           return open("config.yaml")  # I/O outside loaders/  
+
+   ✅ loaders/config_loader.py:  
+       def read_config():  
+           return open("config.yaml")  
+
+[MFV-1] ❌ combat/player.py:  
+        def attack():  
+            def _apply_damage():  
+                global_mfv()  # MFV in nested scope  
+
+   ✅ combat/player.py:  
+      def attack(mfv):  # Explicitly passed  
+          def _apply_damage(fn):  
+              return fn()  
+
+=== EXCEPTIONS ===  
+1. Temporary:  
+   # @temp_override: JIRA-1234 (expires 2024-12-31)  
+   LEGACY_HEALTH = 100  # Grandfathered naming  
+
+2. Permanent:  
+   - Update this file + notify AI maintainers  

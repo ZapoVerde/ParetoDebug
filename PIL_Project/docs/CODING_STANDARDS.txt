@@ -1,0 +1,80 @@
+CODING STANDARDS
+=== NAMING SCHEMA ===
+Variables:
+NETWORK_REQUEST_RETRIES_MAX = 3 # [DOMAIN][ENTITY][METRIC]_[TYPE]
+
+Events:
+EVENT_COMBAT_PLAYER_ATTACK_CRIT # [EVENT][DOMAIN][ENTITY][ACTION][RESULT]
+
+=== DOCSTRING PROTOCOL ===
+def apply_damage():
+"""Calculates final damage after modifiers.
+@tags: ["combat", "core"]
+@debug: "TRACE_DAMAGE_CALCULATION"
+@status: "stable"
+"""
+
+=== ANTI-PATTERNS ===
+
+I/O in utils/
+
+MFVs in closures
+
+Unlogged state changes
+
+--- DEBUGGING_ONTOLOGY.txt ---
+
+DEBUGGING ONTOLOGY
+=== SEMANTIC LINKS ===
+Naming Pattern Debugging Meaning
+
+[DOMAIN]_[ENTITY]HP Health state → Check for EVENT_DAMAGE
+NETWORK.*_TIMEOUT Network issue → Correlate with retries
+
+=== EVENT CAUSALITY ===
+EVENT_COMBAT_ATTACK
+→ TRACE_DAMAGE_CALC
+→ EVENT_UI_HEALTH_UPDATE
+
+=== AI DIRECTIVES ===
+
+Assume all unlogged state is suspect
+
+Infer causality from naming + docstring tags
+
+Propose fixes that preserve traceability
+
+--- IMPLEMENTATION ---
+
+Store these in /docs/governance/
+
+AI loads them during:
+
+Code generation
+
+PR review
+
+Debug sessions
+
+Enforcement Flow:
+Read Laws → Check Standards → Apply Ontology
+
+=== NAMING ANTI-EXAMPLES ===  
+❌ player_health = 100  # Unstructured  
+❌ handleClick()        # Inconsistent caps  
+✅ COMBAT_PLAYER_HP_CURRENT = 100  
+✅ EVENT_UI_BUTTON_CLICK  
+
+=== DOCSTRING ANTI-EXAMPLES ===  
+❌ def heal():  
+     """Heals the player"""  # Missing @tags  
+
+   ✅ def heal():  
+       """Restores player health.  
+       @tags: ["combat", "core"]  
+       @debug: "TRACE_HEAL"  
+       """  
+
+=== EXCEPTIONS ===  
+# Use only with PIL approval:  
+# @force_override: REASON  

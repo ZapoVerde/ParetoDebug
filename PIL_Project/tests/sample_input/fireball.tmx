@@ -1,0 +1,12 @@
+<!-- tests/sample_input/assets/fireball.tmx -->
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="1" height="1" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="dummy" tilewidth="32" tileheight="32">
+  <image source="dummy_icon.png" width="32" height="32"/>
+ </tileset>
+ <layer name="Layer1" width="1" height="1">
+  <data encoding="csv">
+   1
+  </data>
+ </layer>
+</map>

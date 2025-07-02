@@ -1,0 +1,122 @@
+▓▓▓ IMPLEMENTATION PLAN — PARETO DEBUGGING FRAMEWORK ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This plan outlines a full integration strategy for the Pareto Debugging Framework,
+including trace_id, trace history buffering, tag enforcement, and AI-aligned log output.
+All phases follow contract-first discipline and are designed to comply with the Modular
+ASCII Game Architecture and assistant behavior profile.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 1 — CORE LOGGER + RULE ENFORCER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Install the base `debug.py` logger
+- Enforce `debug_rules.json` constraints at runtime
+- Route logs to `debug_logs/<context>.jsonl`
+
+Tasks:
+- Create Debugger class with `__call__()` method
+- Enforce required fields: timestamp, context, action
+- Optionally enforce ai_tags and action format
+- Write each entry as JSONL, one per line
+- Add optional console output via flag
+- Tag file as [AI] and route via adapter layer
+
+Time Estimate: 2–3 hours
+Lock-in Trigger: Once deployed, `print()` use in systems is banned
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 2 — STRUCTURED TRACEBACKS + TRACE ID
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Add error traceability and per-flow log scoping
+
+Tasks:
+- Build `traceback_utils.py` to flatten exception info
+- Add trace_id parameter to all debug entries
+- Pass trace_id through core flows (e.g. combat rounds)
+- Include traceback in any debug log with action: "error_*"
+
+Time Estimate: 3–4 hours
+Lock-in Trigger: All error logs must include structured traceback and trace_id
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 3 — TRACE HISTORY BUFFER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Maintain an in-memory log history per trace
+- Emit recent events automatically on failure
+
+Tasks:
+- Implement ring buffer keyed by trace_id
+- Add new entries to buffer on every debug call
+- On error, filter buffer by current trace_id and dump into `trace_history`
+- Limit buffer size to configurable N (default: 20)
+
+Time Estimate: 2–3 hours
+Lock-in Trigger: All errors must include `trace_history` in the logged entry
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 4 — TAG ALIGNMENT + LINTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Enforce shared vocabulary across ai_tags and @tags
+
+Tasks:
+- Create `tags_vocab.json` using MECE principles
+- Add validation to reject logs with undefined ai_tags
+- Optionally generate tag autocompletion hints
+- Require each log and function to include one tag per semantic group
+
+Time Estimate: 2–3 hours
+Lock-in Trigger: No ai_tag or @tag may appear unless in vocabulary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 5 — TEST SUITE + GOVERNANCE LOCK-IN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Validate all debugging components
+- Lock structure and prevent regressions
+
+Tasks:
+- Unit test: debug.py (valid entries, rejection behavior)
+- Unit test: traceback flattening
+- Functional test: simulate crash and capture trace_history
+- Add enforcement checklist or CI hook for governance pass
+
+Time Estimate: 3–5 hours
+Lock-in Trigger: No assistant-generated logging changes allowed without tests
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOTAL ESTIMATE: 15–18 hours (project time)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Assumes:
+- System is currently single-threaded
+- No legacy logging code interferes
+- Log folder exists and is writable
+- You are not integrating with external tracing platforms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPTIONAL POST-MVP EXTENSIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Per-trace file dump (replay.jsonl)            → +1–2 hrs
+• Ring buffer persisted to disk (crash-safe)    → +2 hrs
+• Log deduplication, spam suppression           → +1 hr
+• CLI log viewer with jq filters                → +2–3 hrs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Approve or modify the phase plan  
+[ ] Specify integration order (strict linear vs overlap)  
+[ ] Confirm whether to create drop-in scaffolds for each phase  
+[ ] Lock test scaffolding approach (code-first vs test-first)
+
+Assistant will proceed only after explicit confirmation.

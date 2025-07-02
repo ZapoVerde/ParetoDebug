@@ -1,0 +1,155 @@
+▓▓▓ PHASE 1 — CORE LOGGER + RULE ENFORCER (PSEUDO-CODE PLAN) ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This document describes the implementation strategy for the core logging
+layer of the Pareto Debugging Framework using pseudo-code and structural
+descriptions only — no syntax, no language bindings.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ MODULE: LOGGING ADAPTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+- Provide safe, stable access to the debug system
+- Prevent direct import of core logger into external systems
+- Act as boundary for Systems → Debug interaction
+
+Structure:
+- On request, return a new Debugger instance bound to a given context string
+- Also provide a global fallback Debugger for simple calls
+
+Inputs:
+- context string (e.g. "combat/resolve")
+
+Outputs:
+- Debugger instance (scoped to context)
+
+Notes:
+- Adapter contains no logic
+- Tags: [AI], [ADAPTER]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ MODULE: DEBUGGER (LOGGING CORE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+- Accept and structure debug log entries
+- Validate each entry against declared rules
+- Persist valid entries to `.jsonl` file
+- Optionally display to console for real-time visibility
+
+Main class: Debugger
+
+Primary operations:
+1. Constructor
+   - Receives a string context
+   - Sanitizes context name for file safety
+   - Loads rules from adjacent config
+   - Opens output file in append mode
+
+2. Call Method
+   - Receives:
+     → action name (e.g. "attack_roll")
+     → optional data payload (e.g. dice values)
+     → optional state snapshot (e.g. hp, position)
+     → optional ai_tags (e.g. "combat", "performance")
+     → optional print_console flag
+   - Builds a JSON object with:
+     → timestamp (ISO 8601)
+     → context (pre-sanitized)
+     → action (required)
+     → data (optional)
+     → state (optional)
+     → ai_tags (optional)
+   - Passes the object to the validator
+   - If valid:
+     → Writes it as one line in the context file
+     → Optionally prints it to console in formatted form
+     → Returns the log entry as a dict/object
+
+3. Validator (Private)
+   - Checks for required fields based on rules:
+     → timestamp, context, action always required
+     → state or data at least one required (if enforced)
+     → action must match format "verb_noun" (if enabled)
+     → ai_tags must be present (if enforced)
+   - Raises error if invalid
+
+4. Rule Loader (Private)
+   - Opens `debug_rules.json`
+   - Loads values into internal dict
+   - Defaults to lenient if file missing
+
+5. Context Sanitizer (Private)
+   - Replaces unsafe characters (slashes, colons) with underscores
+   - Guarantees filename compatibility
+
+Output:
+- One line per event in `/debug_logs/context_name.jsonl`
+- Example filename: `combat_resolve.jsonl`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ CONFIG FILE: DEBUG RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Location:
+- /debug_core/debug_rules.json
+
+Purpose:
+- Declares required fields and structural expectations for logs
+
+Structure (example):
+- enforce_action_format = true  → requires action in verb_noun style
+- require_ai_tags = true       → all logs must include tags
+- require_state_or_data = true → at least one must be present
+- output_format = "jsonl"
+- file_naming_policy = "context_sanitized.jsonl"
+
+Effects:
+- Rules are enforced during log creation
+- If any rule fails, the log is rejected before writing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ FILE FLOW OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SYSTEM LAYER
+→ calls get_debugger("module/section")
+→ receives Debugger instance
+
+→ calls debug("action", data=..., state=..., ai_tags=...)
+
+ADAPTER
+→ routes request to debug_core implementation
+
+LOGGER
+→ builds entry
+→ validates entry
+→ writes to context-named file in /debug_logs/
+→ optionally prints summary to console
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ PSEUDO-EXAMPLE: LOGGING A COMBAT ACTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+combat module begins resolution step  
+→ retrieves Debugger for "combat/resolve"
+
+calls debug logger:
+→ action: "roll_damage"
+→ data: dice values, weapon type
+→ state: target HP before/after
+→ ai_tags: ["combat", "damage"]
+
+logger builds JSON object  
+→ timestamp = now()  
+→ context = "combat/resolve"  
+→ action = "roll_damage"  
+→ data = {dice=[4,5], weapon="sword"}  
+→ state = {hp_before=12, hp_after=5}  
+→ ai_tags = ["combat", "damage"]
+
+passes to validator  
+→ all rules satisfied  
+→ writes line to `debug_logs/combat_resolve.jsonl`  
+→ prints summary to screen (if enabled)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ END OF PHASE 1 PLAN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

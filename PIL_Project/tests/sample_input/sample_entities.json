@@ -1,0 +1,14 @@
+[
+  {
+    "fqname": "sample.module.func",
+    "type": "function",
+    "doc": "This is a sample function for testing.",
+    "tags": ["sample", "test", "exporter"]
+  },
+  {
+    "fqname": "sample.module.classA",
+    "type": "class",
+    "doc": "Sample class docstring.",
+    "tags": ["sample", "class"]
+  }
+]

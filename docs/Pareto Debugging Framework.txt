@@ -1,0 +1,125 @@
+▓▓▓ IMPLEMENTATION PLAN — PARETO DEBUGGING FRAMEWORK ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This plan outlines the lean, enforced integration of the MVP feature set for the 
+Pareto Debugging Framework — focusing on AI-aligned, traceable debug instrumentation. 
+Secondary features are acknowledged but deferred. All phases follow contract-first 
+discipline and comply with the Modular ASCII Game Architecture.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 1 — STRUCTURED DEBUG LOGGER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Implement the foundational `debug()` logging utility
+- Define standardized runtime debug entry format
+
+Tasks:
+- Create `debug.py` with `Debugger` class and `__call__()` method
+- Required fields: `timestamp`, `context`, `action`
+- Optional fields: `data`, `state`, `trace_id`
+- Write each entry as `.jsonl` (1 object per line)
+- Disallow `print()` in systems and replace with `debug()`
+- Include `DEBUG_MODE` toggle via config
+
+Time Estimate: 1.5–2 hours  
+Lock-in Trigger: All debug output must route through `debug.py`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 2 — TRACE ID GENERATION + FLOW PROPAGATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Enable cross-function log scoping via `trace_id`
+
+Tasks:
+- Add UUID generator for trace IDs
+- Propagate `trace_id` through flow handlers (e.g. combat, AI, XP)
+- Require `trace_id` for all debug calls in structured flows
+- Add default trace_id passthrough to decorator in Phase 3
+
+Time Estimate: 2–3 hours  
+Lock-in Trigger: All critical debug flows must declare and propagate `trace_id`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 3 — FUNCTION AUTO-TRACE DECORATOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Reduce logging friction and increase visibility
+
+Tasks:
+- Add `@debug_trace(context=...)` decorator
+- Automatically log: function entry, args, return values, duration
+- Log exceptions with `action="error_occurred"` and `trace_id` if present
+- Use `state` field for inputs/outputs; add tags where available
+
+Time Estimate: 2–3 hours  
+Lock-in Trigger: Decorator used on all high-risk or multi-stage logic functions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 4 — TEST SCHEMA + USAGE CHECKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal:
+- Prevent silent misuse and enforce minimum debug quality
+
+Tasks:
+- Add schema validator for required fields
+- Write unit tests for:
+  - Valid vs invalid debug entries
+  - Auto-decorated function flow
+- Include lint/test hook to warn on `print()` or missing debug context
+
+Time Estimate: 3–4 hours  
+Lock-in Trigger: All debug-capable modules must pass validator
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECONDARY FEATURES (POST-MVP)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These are valuable but not required for core function. Slated for later phases.
+
+A. Trace History Bundling
+- Maintain per-trace ring buffer
+- Attach recent debug entries to `trace_history` field on error
+- Helps AI reconstruct logic flow without file grep
+
+B. ai_tags + tags_vocab.json
+- Add semantic classification to logs (e.g., ["combat", "runtime_behavior"])
+- Use shared tag vocabulary following MECE principle
+- Enable AI-led triage and log filtering
+
+C. Contract Enforcement for Assistant
+- All assistant-generated code must conform to debug structure
+- Rejects `print()`, requires `debug()` use and tagging compliance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXCLUDED FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These were considered but rejected due to low AI utility, high overhead, or redundancy:
+
+✘ Per-context `.jsonl` routing — not AI-relevant  
+✘ CLI viewer tooling — for human use only  
+✘ Log rotation or compression — not relevant at current project scale  
+✘ `debug_rules.json` enforcement — too heavy for solo workflow  
+✘ Human-readable print fallback — breaks AI-parsability model
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ESTIMATED TOTAL TIME (MVP): 8–12 hours
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Assumes:
+- Code is modular and adapter-routed
+- DEBUG_MODE already exists in config
+- No legacy raw `print()` use in system logic
+- Project is single-threaded (no concurrency tracing required)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Approve or edit the implementation plan  
+[ ] Confirm phase order (strict or concurrent allowed)  
+[ ] Confirm whether to generate stub code for Phase 1  
+[ ] Confirm testing method: test-first or after integration  

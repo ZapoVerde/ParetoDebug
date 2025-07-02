@@ -1,0 +1,32 @@
+{
+  "sample.module.func": {
+    "fqname": "sample.module.func",
+    "type": "function",
+    "module": "sample.module",
+    "function": "func",
+    "status": "active",
+    "visibility": "public",
+    "deprecated": false,
+    "tags": ["sample", "test"],
+    "description": "Sample function description.",
+    "docstring_full": "Full docstring text here.",
+    "links": [
+      {"type": "calls", "target": "sample.module.other_func"}
+    ],
+    "linked_journal_entry": "journal_entry_001"
+  },
+  "sample.module.classA": {
+    "fqname": "sample.module.classA",
+    "type": "class",
+    "module": "sample.module",
+    "function": "classA",
+    "status": "active",
+    "visibility": "public",
+    "deprecated": false,
+    "tags": ["sample", "class"],
+    "description": "Sample class description.",
+    "docstring_full": "Class full docstring text.",
+    "links": [],
+    "linked_journal_entry": null
+  }
+}

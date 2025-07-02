@@ -1,0 +1,44 @@
+{
+  "mod.shared_constant": {
+    "fqname": "mod.shared_constant",
+    "type": "variable",
+    "module": "mod",
+    "function": "shared_constant",
+    "status": "active",
+    "visibility": "public",
+    "deprecated": false,
+    "tags": ["shared"],
+    "description": "A constant used in multiple places.",
+    "docstring_full": "Shared constant for cross-file test.",
+    "links": [],
+    "linked_journal_entry": null
+  },
+  "mod.fileA_func": {
+    "fqname": "mod.fileA_func",
+    "type": "function",
+    "module": "mod",
+    "function": "fileA_func",
+    "status": "active",
+    "visibility": "public",
+    "deprecated": false,
+    "tags": ["fileA"],
+    "description": "Function A uses shared_constant.",
+    "docstring_full": "Function A docstring.",
+    "links": [{"type": "uses", "target": "mod.shared_constant"}],
+    "linked_journal_entry": null
+  },
+  "mod.fileB_func": {
+    "fqname": "mod.fileB_func",
+    "type": "function",
+    "module": "mod",
+    "function": "fileB_func",
+    "status": "active",
+    "visibility": "public",
+    "deprecated": false,
+    "tags": ["fileB"],
+    "description": "Function B uses shared_constant.",
+    "docstring_full": "Function B docstring.",
+    "links": [{"type": "uses", "target": "mod.shared_constant"}],
+    "linked_journal_entry": null
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "project_root": "./pil_meta",
+  "scan_dirs": [
+    "./pil_meta",        
+    "./tests",           
+    "./scripts"          
+  ],
+  "journal_path": "./docs",
+  "output_dir": "./exports",
+  "docs_dir": "./documents",
+  "snapshot_dir": "./snapshots",
+  "vault_dir": "./exports/vault",
+  "config_self_path": "./pilconfig_self.json",
+  "pil_module_path": "./PIL_Project",
+  "asset_extensions": [".png", ".json", ".tmx", ".glb", ".shader", ".svg", ".csv"],
+  "asset_dirs": [
+    "./assets"           
+  ]
+}

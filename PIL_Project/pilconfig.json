@@ -1,0 +1,32 @@
+{
+  "project_root": ".",
+  "scan_dirs": [
+    "./pil_meta",
+    "./tests",
+    "./scripts"
+  ],
+  "output_dir": "./exports",
+  "snapshot_dir": "./snapshots",
+  "config_self_path": "./pilconfig.json",
+  "pil_module_path": ".",
+  "asset_extensions": [
+    ".png",
+    ".json",
+    ".tmx",
+    ".glb",
+    ".shader",
+    ".svg",
+    ".csv"
+  ],
+  "ignored_folders": [
+    ".git",
+    "__pycache__",
+    "snapshots",
+    "exports",
+    ".mypy_cache",
+    ".venv",
+    "env",
+    ".idea",
+    ".pytest_cache"
+  ]
+}

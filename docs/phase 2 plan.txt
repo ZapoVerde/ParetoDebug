@@ -1,0 +1,53 @@
+▓▓▓ PHASE 2 — TRACE ID PROPAGATION (PSEUDO-CODE PLAN) ▓▓▓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This phase defines the logic and integration flow for assigning and propagating `trace_id`
+through structured runtime logic, enabling logs to be grouped and reconstructed across systems.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ MODULE: TRACE ID UTILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:
+- Generate unique trace IDs
+- Provide propagation tools for flows and decorators
+
+Structure:
+- Function: generate_trace_id() → returns UUIDv4
+- Function: attach_trace_id(loggable_function)
+  → Decorator that injects or threads trace_id through kwargs
+
+Notes:
+- Trace IDs must persist across combat turns, AI evaluations, etc.
+- Tags: [FLOW], [UTILITY], [AI]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ USAGE FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- At start of major logic unit (e.g., player turn, AI decision):
+  → trace_id = generate_trace_id()
+
+- Pass trace_id into all debug() calls during that flow
+
+- In decorated functions:
+  → If trace_id is missing, generate and inject it
+  → Else, propagate forward unchanged
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ EXAMPLE FLOW (PSEUDO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+combat_round():
+    trace_id = generate_trace_id()
+    resolve_attack(target, trace_id=trace_id)
+
+resolve_attack(target, trace_id):
+    debug("apply_modifiers", ..., trace_id=trace_id)
+    debug("roll_damage", ..., trace_id=trace_id)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ EFFECT ON DEBUG OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Each log entry includes:
+→ "trace_id": "<UUID>"
+
+Allows postmortem tools or AI to group and sequence entries.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
